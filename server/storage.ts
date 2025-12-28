@@ -7,8 +7,9 @@ import {
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 // Import both JSON data files
-import projectsData from "../client/src/data/projects.json";
-import insightsData from "../client/src/data/insights.json";
+// Replace the old imports with these
+import projectsData from "../data/projects.json";
+import insightsData from "../data/insights.json";
 
 export interface IStorage {
   getProjects(): Promise<Project[]>;
