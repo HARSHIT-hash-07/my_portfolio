@@ -160,7 +160,7 @@ export default function Home() {
   return (
     <div className="min-h-screen text-foreground transition-colors duration-500 overflow-x-hidden">
       {/* Hero Section */}
-      <section className="min-h-screen flex items-center px-6 md:px-12 max-w-[1400px] mx-auto">
+      <section className="min-h-screen flex items-center pt-28 sm:pt-0 px-6 md:px-12 max-w-[1400px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -172,7 +172,7 @@ export default function Home() {
               <span className="text-lg md:text-2xl font-mono tracking-[0.2em] uppercase text-muted-foreground font-medium block">
                 Hello everyone, I am
               </span>
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-medium leading-none tracking-tighter whitespace-nowrap">
+              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-medium leading-[1.1] tracking-tighter sm:whitespace-nowrap">
                 <span className="text-primary">Harshit Vaghamshi</span>
               </h1>
             </div>
