@@ -6,10 +6,8 @@ import {
   type InsertMessage,
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
-// Import both JSON data files
-// Replace the old imports with these
-import projectsData from "../data/projects.json";
-import insightsData from "../data/insights.json";
+import path from "path";
+import { readFileSync } from "fs";
 
 export interface IStorage {
   getProjects(): Promise<Project[]>;
@@ -21,33 +19,52 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // Projects: Now served from JSON
+  /**
+   * Helper to read JSON files from the root /data folder.
+   * process.cwd() is essential for Vercel to find the root directory.
+   */
+  private readJsonFile(fileName: string) {
+    try {
+      const filePath = path.join(process.cwd(), "data", fileName);
+      const fileContent = readFileSync(filePath, "utf-8");
+      return JSON.parse(fileContent);
+    } catch (error) {
+      console.error(`Error reading ${fileName} from ${process.cwd()}:`, error);
+      return [];
+    }
+  }
+
+  // Projects: Served dynamically from the root /data/projects.json
   async getProjects(): Promise<Project[]> {
-    return projectsData as Project[];
+    const data = this.readJsonFile("projects.json");
+    return data as Project[];
   }
 
   async getProject(id: number): Promise<Project | undefined> {
-    return (projectsData as Project[]).find((p) => p.id === id);
+    const data = this.readJsonFile("projects.json") as Project[];
+    return data.find((p) => p.id === id);
   }
 
-  // Insights: Now served from JSON for Vercel permanence
+  // Insights: Served dynamically from the root /data/insights.json
   async getInsights(): Promise<Insight[]> {
-    return insightsData as Insight[];
+    const data = this.readJsonFile("insights.json");
+    return data as Insight[];
   }
 
   async getInsightBySlug(slug: string): Promise<Insight | undefined> {
-    return (insightsData as Insight[]).find((i) => i.slug === slug);
+    const data = this.readJsonFile("insights.json") as Insight[];
+    return data.find((i) => i.slug === slug);
   }
 
-  // Messages: Still uses DB (Will reset on Vercel restart, which is fine for a portfolio)
+  // Messages: Continues to use the live Neon PostgreSQL DB
   async createMessage(message: InsertMessage): Promise<void> {
     await db.insert(messages).values(message);
   }
 
   async seedData(): Promise<void> {
-    // seedData is now empty because all public data is in JSON files
-    // This prevents errors on Vercel's read-only file system
-    console.log("Static data loaded from JSON. Database seeding skipped.");
+    console.log(
+      "Static data loaded via FS. Database seeding skipped for Vercel compatibility."
+    );
   }
 }
 
