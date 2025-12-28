@@ -4,61 +4,55 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 
 const app = express();
-const httpServer = createServer(app);
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Logging helper
-export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-  console.log(`${formattedTime} [${source}] ${message}`);
+// Create the server instance
+const httpServer = createServer(app);
+
+// Simple logging helper
+export function log(message: string) {
+  console.log(`${new Date().toLocaleTimeString()} [express] ${message}`);
 }
 
-// Request logging middleware
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (req.path.startsWith("/api")) {
-      log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
-    }
-  });
-  next();
-});
-
 (async () => {
-  // Setup your API routes first
+  // 1. Register API routes first
   await registerRoutes(httpServer, app);
 
-  // Global Error Handler
+  // 2. Error handling
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
+    res
+      .status(err.status || 500)
+      .json({ message: err.message || "Internal Server Error" });
   });
 
-  // Serve static files in production
+  // 3. Setup Frontend
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
+    // This is what makes your localhost:3001 work exactly as before
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }
 
-  // ONLY listen if we are NOT on Vercel
+  // 4. Start the listener for LOCAL development
+  // We use the VERCEL env check to avoid interfering with production
   if (process.env.VERCEL !== "1") {
     const port = parseInt(process.env.PORT || "3001", 10);
-    httpServer.listen(port, "0.0.0.0", () => {
-      log(`Local dev serving on port ${port}`);
-    });
+    const host = process.env.HOST || "127.0.0.1";
+
+    httpServer.listen(
+      {
+        port,
+        host,
+      },
+      () => {
+        log(`serving on http://${host}:${port}`);
+      }
+    );
   }
 })();
 
-// CRITICAL: Export the app for Vercel Serverless Functions
+// 5. THE "MAGIC" LINE: Export for Vercel
+// This allows Vercel to bypass the listener and use the app directly in the cloud.
 export default app;
