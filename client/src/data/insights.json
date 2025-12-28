@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "title": "My Journey at Google STEP",
+    "summary": "Reflecting on my intensive internship experience, learning scalable engineering practices, and contributing to core products.",
+    "content": "Full content about the Google STEP experience...",
+    "slug": "google-step-journey",
+    "readTime": "5 min read"
+  },
+  {
+    "id": 2,
+    "title": "Microsoft Explore: A New Perspective",
+    "summary": "How exploring different engineering roles at Microsoft shaped my understanding of the software development lifecycle.",
+    "content": "Full content about the Microsoft Explore experience...",
+    "slug": "microsoft-explore",
+    "readTime": "4 min read"
+  }
+]

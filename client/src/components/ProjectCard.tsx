@@ -1,58 +1,89 @@
-import { Project } from "@shared/schema";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
-import { Link } from "wouter";
+import { useState } from "react";
 
-interface ProjectCardProps {
-  project: Project;
+export function ProjectCard({
+  project,
+  index,
+}: {
+  project: any;
   index: number;
-}
+}) {
+  const [imgError, setImgError] = useState(false);
 
-export function ProjectCard({ project, index }: ProjectCardProps) {
+  // Prevent internal redirection if link is missing
+  const isValidLink = project.link && project.link !== "#";
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="group relative"
+      viewport={{ once: true }}
+      className="group relative flex flex-col md:flex-row gap-6 bg-card/20 backdrop-blur-md border border-border/40 rounded-[2.5rem] overflow-hidden p-5 transition-all duration-500 shadow-xl h-auto md:h-72 w-[700px]"
     >
-      <Link href={`/project/${project.id}`} className="block">
-        <div className="relative aspect-[4/3] overflow-hidden bg-card mb-6 group-hover:shadow-2xl group-hover:shadow-primary/10 transition-shadow duration-500">
-          <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 mix-blend-overlay" />
-          <img 
-            src={project.imageUrl} 
+      <a
+        href={isValidLink ? project.link : undefined}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`w-full md:w-56 h-40 md:h-full shrink-0 ${
+          !isValidLink && "pointer-events-none"
+        }`}
+      >
+        <div className="w-full h-full rounded-[1.8rem] overflow-hidden bg-muted/20 border border-white/5">
+          <img
+            src={
+              imgError || !project.imageUrl
+                ? "https://images.unsplash.com/photo-1550751827-4bd374c3f58b"
+                : project.imageUrl
+            }
             alt={project.title}
-            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 ease-out transform group-hover:scale-105"
+            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-100 group-hover:scale-110"
+            onError={() => setImgError(true)}
           />
-          <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black">
-              <ArrowUpRight className="w-6 h-6" />
-            </div>
-          </div>
         </div>
-        
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-serif font-medium group-hover:text-primary transition-colors duration-300">
+      </a>
+
+      <div className="flex flex-col flex-1 py-1 overflow-hidden">
+        <div className="flex justify-between items-start mb-3">
+          <a
+            href={isValidLink ? project.link : undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={!isValidLink ? "pointer-events-none" : ""}
+          >
+            <h3 className="text-3xl font-serif text-foreground group-hover:text-primary transition-colors pr-2 leading-tight">
               {project.title}
             </h3>
-            <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider border border-white/10 px-2 py-1">
-              {project.category}
-            </span>
-          </div>
-          <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed max-w-md">
-            {project.description}
-          </p>
-          <div className="flex gap-2 mt-4 flex-wrap">
-            {project.tags.slice(0, 3).map(tag => (
-              <span key={tag} className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
-                #{tag}
-              </span>
-            ))}
-          </div>
+          </a>
+
+          <a
+            href={isValidLink ? project.link : undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`p-2 rounded-full bg-primary/5 border border-primary/10 group-hover:bg-primary/20 transition-all shrink-0 ${
+              !isValidLink && "opacity-20 cursor-not-allowed"
+            }`}
+          >
+            <ArrowUpRight className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-all" />
+          </a>
         </div>
-      </Link>
+
+        <p className="text-muted-foreground text-base leading-relaxed mb-4 line-clamp-3">
+          {project.description}
+        </p>
+
+        <div className="flex flex-wrap gap-2 mt-auto">
+          {project.tags?.map((tag: string) => (
+            <span
+              key={tag}
+              className="px-3 py-1 bg-primary/10 border border-primary/20 text-primary font-mono text-[11px] rounded-lg"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
     </motion.div>
   );
 }

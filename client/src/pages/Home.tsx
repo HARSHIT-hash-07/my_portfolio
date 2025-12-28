@@ -1,192 +1,402 @@
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useProjects } from "@/hooks/use-projects";
-import { useInsights } from "@/hooks/use-insights";
 import { ProjectCard } from "@/components/ProjectCard";
 import { MagneticButton } from "@/components/MagneticButton";
-import { ArrowRight, Code, Brain, Cpu, Terminal } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Terminal as TerminalIcon,
+  ArrowUpRight,
+  ArrowRight,
+} from "lucide-react";
 import { Link } from "wouter";
+import { useState, useRef, useEffect } from "react";
+
+const revealVariants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: (delay: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.8,
+      delay: delay,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  }),
+};
+
+// Terminal Animation Config
+const typingContainer = {
+  hidden: { opacity: 1 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
+};
+
+const typingLetter = {
+  hidden: { display: "none" },
+  visible: { display: "inline" },
+};
+
+const languagesContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { delayChildren: 1.8, staggerChildren: 0.1 },
+  },
+};
+
+const languageTypingContainer = {
+  hidden: { opacity: 1 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
+};
 
 export default function Home() {
   const { data: projects, isLoading: loadingProjects } = useProjects();
-  const { data: insights } = useInsights();
+  const featuredProjects = projects?.filter((p) => p.featured) || [];
 
-  const featuredProjects = projects?.filter(p => p.featured) || [];
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const marqueeRef = useRef<HTMLDivElement>(null);
+  const [maxScroll, setMaxScroll] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const x = useMotionValue(0);
+
+  // Synchronize the scroll width based on unique project count
+  useEffect(() => {
+    if (marqueeRef.current) {
+      const contentWidth = marqueeRef.current.scrollWidth;
+      const containerWidth = marqueeRef.current.offsetWidth;
+      // Calculate max distance: Total width minus viewable area
+      const scrollDistance = contentWidth - containerWidth;
+      setMaxScroll(scrollDistance > 0 ? -scrollDistance : 0);
+    }
+  }, [featuredProjects, loadingProjects]);
+
+  // Handle "Ping-Pong" Auto-Scroll Logic for unique projects
+  useEffect(() => {
+    let controls: any;
+
+    if (!isPaused && maxScroll !== 0) {
+      const duration = featuredProjects.length * 8; // Smooth traversal speed
+
+      // Reverses direction at ends to avoid needing duplicates
+      controls = animate(x, [0, maxScroll], {
+        duration: duration,
+        ease: "easeInOut",
+        repeat: Infinity,
+        repeatType: "reverse",
+      });
+    }
+
+    return () => controls?.stop();
+  }, [isPaused, maxScroll, featuredProjects.length]);
+
+  const progressBarWidth = useTransform(
+    x,
+    [0, maxScroll || -1],
+    ["0%", "100%"],
+    { clamp: true }
+  );
+
+  const handleManualScroll = (direction: "left" | "right") => {
+    setIsPaused(true);
+    const shift = direction === "left" ? 500 : -500;
+    let newX = x.get() + shift;
+
+    if (newX > 0) newX = 0;
+    if (newX < maxScroll) newX = maxScroll;
+
+    animate(x, newX, {
+      type: "spring",
+      stiffness: 60,
+      damping: 15,
+      onComplete: () => {
+        setTimeout(() => setIsPaused(false), 3000);
+      },
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground grid-bg">
+    <div className="min-h-screen text-foreground transition-colors duration-500 overflow-x-hidden">
       {/* Hero Section */}
-      <section className="min-h-screen flex flex-col justify-center px-6 md:px-12 max-w-8xl mx-auto pt-20">
-        <motion.div
-          initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-5xl"
-        >
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-serif font-medium leading-[0.9] tracking-tight mb-8">
-            Engineering <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/50">Intelligence</span> <br />
-            with Precision.
-          </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl font-light leading-relaxed mb-12">
-            A Creative Engineer at the intersection of AI Research, Competitive Programming, and Digital Logic.
-            IIT BHU Scholar crafting the future of autonomous systems.
-          </p>
-          
-          <div className="flex flex-wrap gap-4">
-            <Link href="/contact">
-              <MagneticButton>Start a Project</MagneticButton>
-            </Link>
-            <Link href="/about">
-              <MagneticButton variant="outline">About Me</MagneticButton>
-            </Link>
-          </div>
-        </motion.div>
-        
-        {/* Scroll Indicator */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 1 }}
-          className="absolute bottom-10 left-6 md:left-12 flex items-center gap-4 text-xs font-mono tracking-widest uppercase text-muted-foreground/60"
-        >
-          <div className="w-12 h-[1px] bg-current" />
-          Scroll to explore
-        </motion.div>
-      </section>
+      <section className="min-h-screen flex items-center px-6 md:px-12 max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="lg:col-span-7"
+          >
+            <div className="space-y-4 mb-10">
+              <span className="text-lg md:text-2xl font-mono tracking-[0.2em] uppercase text-muted-foreground font-medium block">
+                Hello everyone, I am
+              </span>
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-medium leading-none tracking-tighter whitespace-nowrap">
+                <span className="text-primary">Harshit Vaghamshi</span>
+              </h1>
+            </div>
 
-      {/* Technical Edge / Expertise */}
-      <section className="py-32 px-6 md:px-12 border-t border-white/5">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-20">
-            <h2 className="text-4xl md:text-5xl font-serif">Technical Edge</h2>
-            <p className="text-muted-foreground max-w-md mt-4 md:mt-0 text-right">
-              Deep diving into the theoretical and practical aspects of modern computation.
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-xl font-light leading-relaxed mb-12">
+              A Computer Science student at{" "}
+              <span className="text-foreground font-semibold">IIT BHU</span>,
+              simply following his dreams.{" "}
+              <span className="block mt-4 italic font-normal text-foreground/80">
+                "I live for the quiet satisfaction of making things flow,
+                turning messy ideas into something steady while always leaving
+                room to learn a better way."
+              </span>
             </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: <Brain className="w-8 h-8 text-primary" />,
-                title: "AI Agents",
-                desc: "Google Intensive certified specialist in autonomous agent architectures and reinforcement learning environments."
-              },
-              {
-                icon: <Cpu className="w-8 h-8 text-primary" />,
-                title: "Digital Logic",
-                desc: "Designing efficient hardware-software interfaces and optimizing low-level computational logic."
-              },
-              {
-                icon: <Terminal className="w-8 h-8 text-primary" />,
-                title: "Competitive Programming",
-                desc: "Solving complex algorithmic challenges with optimal time and space complexity. 5-star coder."
-              }
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="p-8 border border-white/5 hover:border-primary/50 transition-colors bg-card/30 backdrop-blur-sm group"
-              >
-                <div className="mb-6 opacity-70 group-hover:opacity-100 transition-opacity">{item.icon}</div>
-                <h3 className="text-xl font-medium mb-3">{item.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+            <div className="flex flex-wrap gap-4">
+              <Link href="/about">
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group relative"
+                >
+                  <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-primary/60 to-blue-600/60 opacity-20 blur group-hover:opacity-100 transition duration-500" />
+                  <MagneticButton
+                    variant="outline"
+                    className="relative px-10 py-7 text-lg bg-card/50 backdrop-blur-xl border-white/10 rounded-full overflow-hidden transition-all duration-300 group-hover:border-primary/50"
+                  >
+                    <span className="flex items-center gap-3 font-mono tracking-wider">
+                      ABOUT MY JOURNEY
+                      <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+                    </span>
+                  </MagneticButton>
+                </motion.div>
+              </Link>
+            </div>
+          </motion.div>
 
-      {/* Selected Works */}
-      <section className="py-32 px-6 md:px-12 bg-zinc-900/20">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-20">
-            <h2 className="text-4xl md:text-5xl font-serif">Selected Works</h2>
-            <Link href="/projects">
-              <MagneticButton variant="ghost" className="hidden md:flex">View All Works <ArrowRight className="ml-2 w-4 h-4" /></MagneticButton>
-            </Link>
-          </div>
-
-          {loadingProjects ? (
-            <div className="text-center py-20 text-muted-foreground animate-pulse">Loading precision engineering...</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-24">
-              {featuredProjects.length > 0 ? (
-                featuredProjects.map((project, i) => (
-                  <ProjectCard key={project.id} project={project} index={i} />
-                ))
-              ) : (
-                <div className="col-span-2 py-20 text-center border border-dashed border-white/10 rounded-lg">
-                  <p className="text-muted-foreground">Projects loading or none featured yet.</p>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="lg:col-span-5 relative flex justify-center lg:justify-end"
+          >
+            <div className="relative w-full max-w-md aspect-[4/5] p-3 border border-border/40 bg-card/10 backdrop-blur-md rounded-[2.5rem] overflow-hidden shadow-2xl transform-gpu group isolate">
+              {!imageLoaded && (
+                <div className="absolute inset-3 z-30 rounded-[1.8rem] bg-muted/40 overflow-hidden">
+                  <div className="w-full h-full bg-gradient-to-r from-transparent via-primary/5 to-transparent skeleton-shimmer" />
                 </div>
               )}
+              <div className="w-full h-full bg-muted/20 rounded-[1.8rem] overflow-hidden relative">
+                <img
+                  src="/harshit_hover.png"
+                  alt="Creative"
+                  className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-all duration-1000 ease-in-out scale-100 group-hover:scale-105 z-10"
+                />
+                <img
+                  src="/harshit_profile.jpeg"
+                  alt="Professional"
+                  onLoad={() => setImageLoaded(true)}
+                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out z-0 ${
+                    imageLoaded
+                      ? "opacity-100 group-hover:opacity-0"
+                      : "opacity-0"
+                  }`}
+                />
+                <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_20%,_rgba(255,190,100,0.25)_0%,_transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 z-20" />
+              </div>
             </div>
-          )}
-          
-          <div className="mt-12 text-center md:hidden">
-            <Link href="/projects">
-              <MagneticButton variant="outline">View All Works</MagneticButton>
-            </Link>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Insights / Writing */}
-      <section className="py-32 px-6 md:px-12 border-t border-white/5">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-serif mb-20">Insights</h2>
-          
-          <div className="space-y-8">
-            {insights?.slice(0, 3).map((insight, i) => (
-              <motion.div
-                key={insight.id}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="group border-b border-white/5 pb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-white/5 p-4 rounded-lg transition-colors cursor-pointer"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground">
-                    <span>{new Date(insight.publishedAt || "").toLocaleDateString()}</span>
-                    <span>•</span>
-                    <span>{insight.readTime}</span>
-                  </div>
-                  <h3 className="text-2xl font-serif group-hover:text-primary transition-colors">
-                    {insight.title}
-                  </h3>
-                  <p className="text-muted-foreground text-sm max-w-2xl line-clamp-1">
-                    {insight.summary}
-                  </p>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-4 group-hover:translate-x-0 duration-300">
-                   <ArrowRight className="w-6 h-6 text-primary" />
-                </div>
-              </motion.div>
-            ))}
-            
-            {(!insights || insights.length === 0) && (
-              <div className="text-muted-foreground italic">No insights published yet.</div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Education / IIT BHU Banner */}
-      <section className="py-20 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto bg-card border border-white/5 p-12 md:p-20 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-primary/5 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-700 ease-out" />
-          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-            <div>
-              <span className="font-mono text-primary text-sm tracking-widest uppercase mb-2 block">Alma Mater</span>
-              <h2 className="text-3xl md:text-4xl font-serif mb-4">Indian Institute of Technology<br/>(BHU), Varanasi</h2>
-              <p className="text-muted-foreground max-w-lg">
-                Pursuing excellence in engineering, backed by a legacy of technical innovation and rigorous academic standards.
+      {/* Technical Edge Section */}
+      <section className="py-16 px-6 md:px-12 border-t border-border/10">
+        <div className="max-w-[1400px] mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, amount: 0.2 }}
+            variants={revealVariants}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start"
+          >
+            <div className="lg:col-span-5 space-y-10">
+              <h2 className="text-5xl md:text-6xl font-serif">
+                Technical Skills
+              </h2>
+              <p className="text-muted-foreground text-xl md:text-2xl font-light leading-relaxed tracking-wide max-w-lg">
+                I strive to stay open to better ways of doing things by treating
+                every gap in my knowledge not as a deficit, but as a deliberate
+                trailhead for a new, humble deep dive into how things actually
+                work.
               </p>
             </div>
-            <Code className="w-24 h-24 text-white/5 group-hover:text-primary/20 transition-colors" />
+
+            <div className="lg:col-span-7 bg-card/30 backdrop-blur-2xl border border-border/40 rounded-[3rem] p-8 md:p-14 shadow-2xl relative overflow-hidden group transform-gpu">
+              {/* Terminal Section */}
+              <div className="bg-black/90 rounded-2xl overflow-hidden mb-16 border border-white/10 shadow-2xl">
+                <div className="bg-white/5 px-6 py-3 flex items-center justify-between border-b border-white/10">
+                  <div className="flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500/40" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/40" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/40" />
+                  </div>
+                  <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-[0.3em]">
+                    harshit — terminal
+                  </span>
+                </div>
+                <div className="p-10 font-mono text-sm md:text-base leading-relaxed">
+                  <div className="flex gap-3 mb-6">
+                    <span className="text-green-400">➜</span>
+                    <span className="text-blue-400">~</span>
+                    <motion.div
+                      variants={typingContainer}
+                      className="text-white relative"
+                    >
+                      {"ls programming_languages/".split("").map((char, i) => (
+                        <motion.span key={i} variants={typingLetter}>
+                          {char}
+                        </motion.span>
+                      ))}
+                      <motion.span
+                        animate={{ opacity: [1, 0] }}
+                        transition={{ repeat: Infinity, duration: 0.8 }}
+                        className="inline-block w-2 h-5 bg-primary ml-1 align-middle"
+                      />
+                    </motion.div>
+                  </div>
+                  <motion.div
+                    variants={languagesContainer}
+                    className="flex flex-wrap gap-x-10 gap-y-4 text-white ml-8"
+                  >
+                    {["C++", "Python", "C", "TypeScript", "HTML/CSS"].map(
+                      (lang) => (
+                        <motion.span
+                          key={lang}
+                          variants={languageTypingContainer}
+                          className="hover:text-primary transition-all duration-300 cursor-default inline-block"
+                        >
+                          {lang.split("").map((char, i) => (
+                            <motion.span key={i} variants={typingLetter}>
+                              {char}
+                            </motion.span>
+                          ))}
+                        </motion.span>
+                      )
+                    )}
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* Competitive Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-16 px-4">
+                <div className="space-y-8">
+                  <span className="text-primary/90 block uppercase tracking-[0.25em] text-sm font-mono font-bold">
+                    Environment & Stack
+                  </span>
+                  <div className="grid grid-cols-2 gap-y-4 text-foreground/90 font-mono text-sm">
+                    {[
+                      "React",
+                      "OpenCV",
+                      "NumPy",
+                      "Pandas",
+                      "Git",
+                      "VS Code",
+                      "Kaggle",
+                      "Google ADK",
+                    ].map((tool) => (
+                      <div key={tool} className="flex items-center gap-3">
+                        <div className="w-1.5 h-[1px] bg-primary/60" />
+                        <span>{tool}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-6">
+                  <span className="text-primary/90 block uppercase tracking-[0.25em] text-sm font-mono font-bold">
+                    Competitive Statistics
+                  </span>
+                  <div className="space-y-3">
+                    <a
+                      href="https://codeforces.com/profile/HARSHIT_V_07"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group/link flex items-center gap-2 text-2xl font-semibold tracking-tight text-foreground hover:text-primary transition-colors"
+                    >
+                      Codeforces{" "}
+                      <ArrowUpRight className="w-5 h-5 opacity-50 group-hover/link:opacity-100 transition-all" />
+                    </a>
+                    <div className="flex items-center gap-2 font-mono text-base">
+                      <span className="text-muted-foreground">
+                        Peak rating :{" "}
+                        <span className="text-foreground font-bold">1011</span>
+                      </span>
+                      <span className="text-muted-foreground">,</span>
+                      <span className="text-[#808080] font-bold uppercase text-[10px] tracking-widest bg-[#808080]/5 px-2 py-0.5 rounded border border-[#808080]/20">
+                        newbie
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Selected Works: Ping-Pong Marquee with Fade Edges */}
+      <section className="py-32 px-6 md:px-12 relative overflow-hidden">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="mb-16 flex items-end justify-between">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: false }}
+              variants={revealVariants}
+            >
+              <h2 className="text-5xl md:text-6xl font-serif tracking-tight">
+                Selected Works
+              </h2>
+              <p className="text-muted-foreground mt-4 font-mono text-xs uppercase tracking-[0.2em]">
+                Engineering log
+              </p>
+            </motion.div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => handleManualScroll("left")}
+                className="p-4 rounded-full border border-border hover:bg-primary/10 group/btn transition-all active:scale-95"
+              >
+                <ChevronLeft className="w-6 h-6 group-hover/btn:-translate-x-1" />
+              </button>
+              <button
+                onClick={() => handleManualScroll("right")}
+                className="p-4 rounded-full border border-border hover:bg-primary/10 group/btn transition-all active:scale-95"
+              >
+                <ChevronRight className="w-6 h-6 group-hover/btn:translate-x-1" />
+              </button>
+            </div>
+          </div>
+
+          <div
+            className="relative group/marquee"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+          >
+            {/* Fade/Blur Effect Edges: Integrated via Gradient Overlays */}
+            <motion.div
+              ref={marqueeRef}
+              style={{ x }}
+              className="flex gap-8 px-4"
+            >
+              {featuredProjects.map((project, i) => (
+                <div
+                  key={project.id}
+                  className="shrink-0 transform-gpu isolate"
+                >
+                  <ProjectCard project={project} index={i} />
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          <div className="mt-16 h-[2px] w-full bg-primary/10 rounded-full overflow-hidden relative">
+            <motion.div
+              style={{ scaleX: progressBarWidth, originX: 0 }}
+              className="absolute inset-0 bg-primary shadow-[0_0_15px_rgba(var(--primary),0.3)]"
+            />
           </div>
         </div>
       </section>
