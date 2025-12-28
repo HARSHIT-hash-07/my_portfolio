@@ -6,8 +6,46 @@ import {
   type InsertMessage,
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import path from "path";
-import { readFileSync } from "fs";
+
+// Hardcoding your data directly here so Vercel doesn't have to "find" files
+const projectsData: Project[] = [
+  {
+    id: 1,
+    title: "Human-Pose Estimation",
+    description:
+      "Real-time pose tracking system using computer vision and deep learning techniques to analyze human movement patterns with high precision.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1527430253228-e93688616381?auto=format&fit=crop&q=80&w=1000",
+    tags: ["Python", "OpenCV"],
+    category: "Visual Computing",
+    featured: true,
+    link: "https://github.com/HARSHIT-hash-07/Human-Pose-Estimation",
+  },
+  {
+    id: 2,
+    title: "Face-Recognition Door Lock",
+    description:
+      "Secure IoT-based access control system implementing FaceNet for biometric authentication on edge devices.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&q=80&w=1000",
+    tags: ["OpenCV", "Arduino UNO", "HaarCascade"],
+    category: "AI/ML",
+    featured: true,
+    link: "https://github.com/HARSHIT-hash-07/Face-Recognition-Based-Door-Lock",
+  },
+  {
+    id: 3,
+    title: "Autonomous AI Agents",
+    description:
+      "Framework for deploying autonomous agents capable of complex task planning and execution in dynamic environments.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=1000",
+    tags: ["Google ADK"],
+    category: "AI Agents",
+    featured: true,
+    link: "https://github.com/HARSHIT-hash-07",
+  },
+];
 
 export interface IStorage {
   getProjects(): Promise<Project[]>;
@@ -19,52 +57,29 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  /**
-   * Helper to read JSON files from the root /data folder.
-   * process.cwd() is essential for Vercel to find the root directory.
-   */
-  private readJsonFile(fileName: string) {
-    try {
-      const filePath = path.join(process.cwd(), "data", fileName);
-      const fileContent = readFileSync(filePath, "utf-8");
-      return JSON.parse(fileContent);
-    } catch (error) {
-      console.error(`Error reading ${fileName} from ${process.cwd()}:`, error);
-      return [];
-    }
-  }
-
-  // Projects: Served dynamically from the root /data/projects.json
   async getProjects(): Promise<Project[]> {
-    const data = this.readJsonFile("projects.json");
-    return data as Project[];
+    return projectsData;
   }
 
   async getProject(id: number): Promise<Project | undefined> {
-    const data = this.readJsonFile("projects.json") as Project[];
-    return data.find((p) => p.id === id);
+    return projectsData.find((p) => p.id === id);
   }
 
-  // Insights: Served dynamically from the root /data/insights.json
+  // Insights can be an empty array for now to keep it simple
   async getInsights(): Promise<Insight[]> {
-    const data = this.readJsonFile("insights.json");
-    return data as Insight[];
+    return [];
   }
 
   async getInsightBySlug(slug: string): Promise<Insight | undefined> {
-    const data = this.readJsonFile("insights.json") as Insight[];
-    return data.find((i) => i.slug === slug);
+    return undefined;
   }
 
-  // Messages: Continues to use the live Neon PostgreSQL DB
   async createMessage(message: InsertMessage): Promise<void> {
     await db.insert(messages).values(message);
   }
 
   async seedData(): Promise<void> {
-    console.log(
-      "Static data loaded via FS. Database seeding skipped for Vercel compatibility."
-    );
+    console.log("Using hardcoded data. No file system or DB seeding needed.");
   }
 }
 
