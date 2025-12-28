@@ -8,35 +8,16 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Initialize seed data
+  // 1. Initialize storage (logging only now)
   await storage.seedData();
 
-  app.get(api.projects.list.path, async (req, res) => {
-    const projects = await storage.getProjects();
-    res.json(projects);
-  });
+  /**
+   * CLEANUP NOTE:
+   * Project and Insight routes removed because data is now hardcoded
+   * in the frontend for 100% uptime and better performance.
+   */
 
-  app.get(api.projects.get.path, async (req, res) => {
-    const project = await storage.getProject(Number(req.params.id));
-    if (!project) {
-      return res.status(404).json({ message: "Project not found" });
-    }
-    res.json(project);
-  });
-
-  app.get(api.insights.list.path, async (req, res) => {
-    const insights = await storage.getInsights();
-    res.json(insights);
-  });
-
-  app.get(api.insights.get.path, async (req, res) => {
-    const insight = await storage.getInsightBySlug(req.params.slug);
-    if (!insight) {
-      return res.status(404).json({ message: "Insight not found" });
-    }
-    res.json(insight);
-  });
-
+  // 2. Keep the Messages API for your Contact Form
   app.post(api.messages.create.path, async (req, res) => {
     try {
       const input = api.messages.create.input.parse(req.body);
@@ -48,6 +29,8 @@ export async function registerRoutes(
           message: err.errors[0].message,
           field: err.errors[0].path.join("."),
         });
+      } else {
+        res.status(500).json({ message: "Internal Server Error" });
       }
     }
   });
