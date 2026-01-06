@@ -302,7 +302,7 @@ export default function Home() {
                     variants={languagesContainer}
                     className="flex flex-wrap gap-x-10 gap-y-4 text-white ml-8"
                   >
-                    {["C++", "Python", "C", "TypeScript", "HTML/CSS"].map(
+                    {["C++", "Python", "C", "JavaScript", "HTML/CSS"].map(
                       (lang) => (
                         <motion.span
                           key={lang}
@@ -362,7 +362,7 @@ export default function Home() {
                     <div className="flex items-center gap-2 font-mono text-base">
                       <span className="text-muted-foreground">
                         Peak rating :{" "}
-                        <span className="text-foreground font-bold">1011</span>
+                        <span className="text-foreground font-bold">1046</span>
                       </span>
                       <span className="text-muted-foreground">,</span>
                       <span className="text-[#808080] font-bold uppercase text-[10px] tracking-widest bg-[#808080]/5 px-2 py-0.5 rounded border border-[#808080]/20">
