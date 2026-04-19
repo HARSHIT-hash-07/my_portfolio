@@ -362,11 +362,11 @@ export default function Home() {
                     <div className="flex items-center gap-2 font-mono text-base">
                       <span className="text-muted-foreground">
                         Peak rating :{" "}
-                        <span className="text-foreground font-bold">1046</span>
+                        <span className="text-foreground font-bold">1425</span>
                       </span>
                       <span className="text-muted-foreground">,</span>
-                      <span className="text-[#808080] font-bold uppercase text-[10px] tracking-widest bg-[#808080]/5 px-2 py-0.5 rounded border border-[#808080]/20">
-                        newbie
+                      <span className="text-[#03A89E] font-bold uppercase text-[10px] tracking-widest bg-[#03A89E]/10 px-2 py-0.5 rounded border border-[#03A89E]/30">
+                        specialist
                       </span>
                     </div>
                   </div>
